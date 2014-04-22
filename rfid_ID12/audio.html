@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style type="text/css">
+body {
+	margin: 15px;
+	font-family: sans-serif;
+	font-size: 22px;
+	line-height: 1.5em;
+	width: 300px;
+	color: #00AEFF;
+}
+button {
+	margin-top: 40px;
+	padding: 10px;
+	font-size: 22px;
+	width: 280px;
+	color: #00AEFF;
+}
+</style>
+
+	<title>RFID + Audio</title>
+</head>
+<body>
+
+<!--<audio src="audio/noise01-08.mp3" preload="auto">-->
+<audio id="audioPlayer" src="" preload="auto">
+	Your browser does not support the <code>audio</code> element.
+</audio>
+
+<div id='textBox'>Scan a tag to play a sound.</div>
+
+<button id="enableAudio" type="button">Enable Audio</button>
+
+<!-- custom io objects are included separately, after Breakout.js -->
+<script src="../../dist/Breakout.js"></script>
+<script src="../../src/custom/RFIDEvent.js"></script>
+<script src="../../src/custom/ID12RFIDReader.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	// declare these variables so you don't have
+	// to type the full namespace
+	var IOBoard = BO.IOBoard;
+	var IOBoardEvent = BO.IOBoardEvent;
+	var ID12RFIDReader = BO.custom.ID12RFIDReader;
+	var RFIDEvent = BO.custom.RFIDEvent;
+
+	// Set to true to print debug messages to console
+    BO.enableDebugging = true;	
+
+	// map RFID tag IDs to audio files
+	var playlist = {
+		'0E008E4A86': "audio/noise01-08.mp3",
+		'0E008E7001': "audio/noise01-02.mp3",
+		'0E008E93D6': "audio/noise01-03.mp3",
+		'0E008E9C1F': "audio/noise01-04.mp3",
+		'0E008E4569': "audio/noise01-05.mp3",
+		'0E008E5D4D': "audio/noise01-06.mp3"		
+	};
+
+	var audio = document.querySelector("#audioPlayer");
+	var enableAudio = document.querySelector('#enableAudio');
+
+	// user needs to click Enable Audio button in order to
+	// use audio on an iOS device.
+	enableAudio.addEventListener('click', function() {
+		audio.play();
+		// hide the enable button
+		enableAudio.style.display = "none";
+	});
+
+	var arduino = new IOBoard(document.location.hostname, 8887);
+	var rfid;
+	var numTracks = playlist.length;
+
+	// uncomment to start playing first audio when the page loads
+	//audio.addEventListener('canplay', playAudio, false);
+
+	function playAudio(evt) {
+		audio.removeEventListener('canplay', playAudio, false);
+		this.play();
+	}
+
+	arduino.addEventListener(IOBoardEvent.READY, onReady);	
+
+	function onReady(evt) {
+					
+		arduino.removeEventListener(IOBoardEvent.READY, onReady);
+
+		rfid = new ID12RFIDReader(arduino);
+		rfid.addEventListener(RFIDEvent.ADD_TAG, onAddTag);
+		rfid.addEventListener(RFIDEvent.REMOVE_TAG, onRemoveTag);
+	}
+
+	function onAddTag(evt) {
+		$('#textBox').html("Added tag: " + evt.tag);
+
+		if (playlist[evt.tag]) {
+			audio.addEventListener('canplay', playAudio, false);
+			// set the audio object source as the filname associated with the RFID tag
+			audio.src = playlist[evt.tag];
+			// load the audio file
+			audio.load();
+		}
+	}
+	
+	function onRemoveTag(evt) {
+		$('#textBox').html("Removed tag: " + evt.tag);
+	}	
+
+});
+</script>
+
+</body>
+</html>

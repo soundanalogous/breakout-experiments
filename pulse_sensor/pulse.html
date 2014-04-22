@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<style type="text/css">
+body {
+    margin: 15px;
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 1.5em;
+    color: #666;
+}
+h2 {
+    padding-left: 0px;
+    font-weight: normal;
+    font-size: 22px;
+    color: #00AEFF;
+}
+.container {
+    background-color: #f7f7f7;
+    border: 1px dotted #CCC;
+    width: 290px;
+    margin-top: 40px;
+}
+.text {
+    font-family: "Arial";
+    font-size: 22px;
+    color: #666;
+    padding: 20px;
+    margin: 0;
+}
+</style>
+
+<title>Pulse Sensor with Custom Firmware</title>
+
+<!-- custom io objects are included separately, after Breakout-core.js -->
+<script src="../../dist/Breakout-core.js"></script>
+<script src="PulseSensor.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+    // dependencies
+    // declare these variables so you don't have
+    // to type the full namespace
+    var IOBoard = BO.IOBoard;
+    var IOBoardEvent = BO.IOBoardEvent;
+    var PulseSensor = BO.custom.PulseSensor;
+    var Event = JSUTILS.Event;
+
+    // set to true to print debug messages to console
+    BO.enableDebugging = true;  
+    
+    var ard = new IOBoard("localhost", 8887);
+    var pulseSensor;
+    
+    // listen for IOBoardEvent.CONNECTED if you are running custom
+    // firmware on the IOBoard rather than AdvancedFirmata
+    ard.addEventListener(IOBoardEvent.CONNECTED, onConnect);
+
+    function onConnect(event) {
+                    
+        ard.removeEventListener(IOBoardEvent.CONNECTED, onConnect);
+            
+        pulseSensor = new PulseSensor(ard);
+        pulseSensor.addEventListener(Event.CHANGE, onSensorUpdate);
+
+        $('#start').on("click", startReading);
+        $('#stop').on("click", stopReading);
+    }
+
+    function onSensorUpdate(event) {
+        var id = event.id;
+        var value = event.value;
+
+        switch (id) {
+        case PulseSensor.SIGNAL_ID:
+            $('#signal').html("Signal: " + value);
+            break;
+        case PulseSensor.BPM_ID:
+            $('#bpm').html("BPM: " + value);
+            break;
+        case PulseSensor.IBI_ID:
+            $('#ibi').html("IBI: " + value);
+            break;
+        }
+    }
+
+    function startReading(evt) {
+        pulseSensor.startReading();
+    }
+
+    function stopReading(evt) {
+        pulseSensor.stopReading();
+    }
+
+});
+
+</script>
+
+</head>
+<body>
+    <h2>Pulse Sensor Data</h2>
+    <div class="container">
+        <div id="signal" class="text">Signal: </div>
+        <div id="bpm" class="text">BPM: </div>
+        <div id="ibi" class="text">IBI: </div>
+    </div>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+</body>
+</html>​

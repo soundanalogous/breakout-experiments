@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<style type="text/css">
+body {
+	margin: 20px;
+	width: 300px;
+	font-family: sans-serif;
+	font-size: 18px;
+	color: #666;
+}
+h2 {
+	font-weight: normal;
+	font-size: 28px;
+	padding-bottom: 20px;
+	color: #00AEFF;
+}
+#btn {
+	padding: 10px;
+	font-size: 22px;
+	width: 280px;
+	color: #00AEFF;
+}
+</style>
+
+<title>Multi-Client Demo</title>
+
+<script src="../../dist/Breakout.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	// You can connect to multiple Arduino boards connected to different 
+	// computers on the same network. Each computer should be running its
+	// own instance of Breakout Server.
+
+	// declare these variables so you don't have
+	// to type the full namespace
+	var IOBoard = BO.IOBoard;
+	var IOBoardEvent = BO.IOBoardEvent;
+	var LED = BO.io.LED;
+
+	// update IP address to that of 1st computer (running Breakout Server) on the network
+	var arduino1 = new IOBoard("192.168.2.5", 8887);
+
+	// update IP address to that 2nd computer (running Breakout Server) on the network
+	var arduino2 = new IOBoard("192.168.2.6", 8887);
+	var arduino1Led;
+	var arduino2Led;
+	var isArduino1Ready = false;
+	var isArduino2Ready = false;
+
+	// listen for the IOBoard READY event which indicates the IOBoard
+	// is ready to send and receive data
+	arduino1.addEventListener(IOBoardEvent.READY, onArduino1Ready);
+	arduino2.addEventListener(IOBoardEvent.READY, onArduino2Ready);
+
+	function onArduino1Ready(event) {
+		// remove the event listener because it is no longer needed
+		arduino1.removeEventListener(IOBoardEvent.READY, onArduino1Ready);
+
+		isArduino1Ready = true;
+
+		// ensure that both IOBoards are ready before continuing
+		if (isArduino2Ready) onBoardsReady();
+	}
+
+	function onArduino2Ready(event) {
+		// remove the event listener because it is no longer needed
+		arduino2.removeEventListener(IOBoardEvent.READY, onArduino2Ready);
+
+		isArduino2Ready = true;
+
+		// ensure that both IOBoards are ready before continuing
+		if (isArduino1Ready) onBoardsReady();
+	}
+
+	function onBoardsReady() {
+		
+		// create an LED object to interface with the LED 
+		// on the Arduino board (connected to pin 11)
+		arduino1Led = new LED(arduino1, arduino1.getDigitalPin(11));
+
+		arduino2Led = new LED(arduino2, arduino2.getDigitalPin(1));		
+		
+		// use jQuery to get a reference to the button 
+		// and listen for a click event
+		$('#btn').on('click', toggleLED);
+	}
+
+	function toggleLED(evt) {
+		arduino1Led.toggle();
+		arduino2Led.toggle();
+	}
+
+});
+
+</script>
+
+</head>
+<body>
+
+  <h2>Multi-Client Demo</h2>
+
+  <p>Press the button to toggle the LED on both Arduino boards.</p>
+  
+  <button id="btn" type="button">Toggle LED</button>
+  
+</body>
+</html>​

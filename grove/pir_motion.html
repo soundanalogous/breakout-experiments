@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<style type="text/css">
+body {
+	margin: 20px;
+	width: 350px;
+	font-family: sans-serif;
+	font-size: 18px;
+	color: #666;
+}
+h2 {
+	font-weight: normal;
+	font-size: 28px;
+	padding-bottom: 20px;
+	color: #00AEFF;
+}
+</style>
+
+<title>PIR Motion Sensor</title>
+
+<script src="../../dist/Breakout.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	// declare these variables so you don't have
+	// to type the full namespace
+	var IOBoard = BO.IOBoard;
+	var IOBoardEvent = BO.IOBoardEvent;
+	var Pin = BO.Pin;
+	var PinEvent = BO.PinEvent;
+
+	// If you want to load this example on a smartphone or tablet,
+	// replace "localhost" with the IP address of the computer
+	// the IOboard is connected to (eg. "192.168.2.3", 8887)
+	var arduino = new IOBoard("localhost", 8887);
+	var vibrationMotor;
+
+
+	// listen for the IOBoard READY event which indicates the IOBoard
+	// is ready to send and receive data
+	arduino.addEventListener(IOBoardEvent.READY, onReady);
+
+	function onReady(event) {
+		
+		// remove the event listener because it is no longer needed
+		arduino.removeEventListener(IOBoardEvent.READY, onReady);
+
+		// set digital pin 2 to input
+		arduino.setDigitalPinMode(2, Pin.DIN);
+		var sensor = arduino.getDigitalPin(2);
+		sensor.addEventListener(PinEvent.RISING_EDGE, onTrigger);
+		sensor.addEventListener(PinEvent.FALLING_EDGE, onMotionLost);
+
+		arduino.setDigitalPinMode(4, Pin.DOUT);
+		vibrationMotor = arduino.getDigitalPin(4);
+
+	}
+
+	function onTrigger(evt) {
+		$('#message').text("Motion Detected");
+
+		vibrate();
+	}
+
+	function onMotionLost(evt) {
+		$('#message').text("Looking for motion...");
+	}
+
+	function vibrate() {
+		vibrationMotor.value = Pin.ON;
+		// turn motor off in 100 ms
+		setTimeout(function() {
+			vibrationMotor.value = Pin.OFF;
+		}, 1000);
+	}
+
+});
+
+</script>
+
+</head>
+<body>
+
+  <h2>PIR Motion Sensor</h2>
+
+  <p id="message">Looking for motion...</p>
+  
+</body>
+</html>​

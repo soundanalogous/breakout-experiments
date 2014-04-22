@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<style type="text/css">
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 1.5em;
+    color: #666;
+}
+section {
+    margin: 15px;
+}
+h2, h4 {
+    font-weight: normal;
+    color: #00AEFF;
+}
+h2 {
+    font-size: 28px;
+}
+h4 {
+    font-size: 22px;
+}
+.state {
+    margin-top: 10px;
+}
+#btn {
+    color: #00AEFF;
+    font-size: 22px;  
+    padding: 10px;
+    width: 100%;
+}
+.container {
+    background-color: #f7f7f7;
+    padding: 20px 10px 20px 10px;
+    border: 1px dotted #CCC;
+    width: 270px;
+    margin-top: 20px;
+}
+</style>
+
+<title>PowerSwitch Tail II</title>
+
+<script src="../../dist/Breakout.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function () {
+
+    // declare these variables so you don't have
+    // to type the full namespace
+    var IOBoard = BO.IOBoard;
+    var IOBoardEvent = BO.IOBoardEvent;
+    var Pin = BO.Pin;
+    var PinEvent = BO.PinEvent;
+
+    // If you are not serving this file from the same computer
+    // that the Arduino Leonardo board is connected to, replace
+    // window.location.hostname with the IP address or hostname
+    // of the computer that the Arduino board is connected to.
+    var host = window.location.hostname;
+    // if the file is opened locally, set the host to "localhost"
+    if (window.location.protocol.indexOf("file:") === 0) {
+        host = "localhost";
+    }
+    var arduino = new IOBoard(host, 8887);
+
+    // Listen for the IOBoard READY event which indicates the IOBoard
+    // is ready to send and receive data
+    arduino.addEventListener(IOBoardEvent.READY, onReady);
+
+    function onReady(event) {
+        var powerSwitch;
+        var isOn = false;
+
+        // Remove the event listener because it is no longer needed
+        arduino.removeEventListener(IOBoardEvent.READY, onReady);
+        
+        // Enable the analog pin so we can read its value
+        arduino.setDigitalPinMode(2, Pin.DOUT);
+        powerSwitch = arduino.getDigitalPin(2);
+
+        $('#btn').on("click", function (evt) {
+            if (isOn) {
+                powerSwitch.value = Pin.OFF;
+                isOn = false;
+                updateState("off");
+            } else {
+                powerSwitch.value = Pin.ON;
+                isOn = true;
+                updateState("on");
+            }
+        });
+    }
+
+    function updateState(state) {
+        $('.state').text(state);
+    }
+
+});
+</script>
+</head>
+<body>
+
+  <section>
+    <h2>PowerSwitch Demo</h2>
+    <div class="container">
+      <button id="btn">Toggle</button>
+    </div>
+    <h4 class="state"></h4>
+  </section> 
+
+</body>
+</html>

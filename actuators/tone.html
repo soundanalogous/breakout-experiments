@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<style type="text/css">
+* {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 1.5em;
+    color: #666;
+}
+section {
+    margin: 15px;
+}
+h2 {
+    font-weight: normal;
+    color: #00AEFF;    
+    font-size: 28px;
+}
+.btn {
+    color: #00AEFF;
+    font-size: 22px;  
+    padding: 10px;
+    width: 50px;
+}
+.container {
+    background-color: #f7f7f7;
+    padding: 20px 10px 20px 10px;
+    border: 1px dotted #CCC;
+    width: 430px;
+    margin-top: 20px;
+}
+</style>
+
+<title>Tone Demo</title>
+
+<script src="../../dist/Breakout.min.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script src="../libs/notes.js"></script>
+<script type="text/javascript">
+$(document).ready(function () {
+
+    // declare these variables so you don't have
+    // to type the full namespace
+    var IOBoard = BO.IOBoard;
+    var IOBoardEvent = BO.IOBoardEvent;
+
+    BO.enableDebugging = true; 
+
+    // If you are not serving this file from the same computer
+    // that the Arduino Leonardo board is connected to, replace
+    // window.location.hostname with the IP address or hostname
+    // of the computer that the Arduino board is connected to.
+    var host = window.location.hostname;
+    // if the file is opened locally, set the host to "localhost"
+    if (window.location.protocol.indexOf("file:") === 0) {
+        host = "localhost";
+    }
+    var arduino = new IOBoard(host, 8887);
+
+    // Listen for the IOBoard READY event which indicates the IOBoard
+    // is ready to send and receive data
+    arduino.addEventListener(IOBoardEvent.READY, onReady);
+
+    function onReady(event) {
+
+        // Remove the event listener because it is no longer needed
+        arduino.removeEventListener(IOBoardEvent.READY, onReady);
+
+        $('#c-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_C2, 500);
+        });
+
+        $('#d-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_D2, 500);
+        });
+
+        $('#e-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_E2, 500);
+        });
+
+        $('#f-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_F2, 500);
+        });
+
+        $('#g-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_G2, 500);
+        });
+
+        $('#a-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_A2, 500);
+        });
+
+        $('#b-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_B2, 500);
+        });
+
+        $('#c3-key').on("click", function (evt) {
+            sendTone(2, notes.NOTE_C3, 500);
+        });
+    }  
+
+    function sendTone(pinNumber, freq, duration) {
+        var data = [];
+
+        data[0] = 0; // TONE_TONE
+        data[1] = pinNumber;
+        data[2] = freq & 0x007F;
+        data[3] = (freq >> 7) & 0x007F;
+        data[4] = duration & 0x007F;
+        data[5] = (duration >> 7) & 0x007F;
+
+        //console.log(data[2] + (data[3] << 7));
+        //console.log(data[4] + (data[5] << 7));
+
+        arduino.sendSysex(0x5F, data);
+    }
+
+});
+</script>
+</head>
+<body>
+
+  <section>
+    <h2>Tone Demo</h2>
+    <div class="container">
+      <button id="c-key" class="btn">C</button>
+      <button id="d-key" class="btn">D</button>
+      <button id="e-key" class="btn">E</button>
+      <button id="f-key" class="btn">F</button>
+      <button id="g-key" class="btn">G</button>
+      <button id="a-key" class="btn">A</button>
+      <button id="b-key" class="btn">B</button>
+      <button id="c3-key" class="btn">C</button>
+    </div>
+  </section> 
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<style type="text/css">
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    margin: 20px;
+    font-family: sans-serif;
+    font-size: 18px;
+    color: #666;
+}
+
+section {
+    margin: 20px 0;
+}
+
+h1, h2 {
+    font-weight: normal;
+}
+
+h1 {
+    font-size: 28px;
+    line-height: 2.0em;
+}
+
+h2 {
+    font-size: 24px;
+    padding-bottom: 20px;
+    color: #00AEFF;
+}
+
+form {
+  width: 100%;
+}
+
+input {
+  padding-left: 5px;
+  color: #00AEFF;
+  width: 100%;
+  font-size: 1.2em;
+  line-height: 1.5em;
+}
+
+</style>
+
+<title>RSS Feed Example</title>
+
+<script src="../../dist/Breakout.js"></script>
+<script src="../libs/jquery-1.9.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+    // declare these variables so you don't have
+    // to type the full namespace
+    var IOBoard = BO.IOBoard;
+    var IOBoardEvent = BO.IOBoardEvent;
+    var RGBLED = BO.io.RGBLED;
+
+    // If you want to load this example on a smartphone or tablet,
+    // replace "localhost" with the IP address of the computer
+    // the IOboard is connected to (eg. "192.168.2.3", 8887)
+    var arduino = new IOBoard("localhost", 8887);
+    var rgbLED,
+        red = 0,
+        green = 0,
+        blue = 0,
+        colorIncrement = 2;
+
+    // term to match in RSS feeds
+    var matchPattern = new RegExp("Obama");
+
+    // array of RSS feeds to search
+    var feeds = [
+        'http://news.google.com/news?ned=us&topic=h&output=rss',
+        'http://feeds.reuters.com/reuters/mediaNews',
+        'http://feeds.reuters.com/Reuters/worldNews'
+    ];
+
+    var numFeeds = feeds.length;
+
+    // set how often to search (in minutes)
+    var searchInterval = 0.5; // every half minute
+
+    var numMatches = 0;
+
+    // listen for the IOBoard READY event which indicates the IOBoard
+    // is ready to send and receive data
+    arduino.addEventListener(IOBoardEvent.READY, onReady);
+
+    function onReady(event) {
+        
+        // remove the event listener because it is no longer needed
+        arduino.removeEventListener(IOBoardEvent.READY, onReady);
+
+        rgbLED = new RGBLED(
+            arduino, 
+            arduino.getDigitalPin(3), 
+            arduino.getDigitalPin(5), 
+            arduino.getDigitalPin(6), 
+            RGBLED.COMMON_CATHODE);
+
+        rgbLED.setColor(0, 0, 0);
+        
+        checkFeeds();
+        setInterval(checkFeeds, searchInterval * 1000 * 60);
+
+    }
+
+    function updateAlert(matchCount) {
+        red = matchCount * colorIncrement;
+        if (red > 255) red = 255;
+        //rgbLED.fadeTo(red, green, blue, 500);
+        rgbLED.setColor(red, green, blue);
+    }
+
+    function checkFeeds() {
+        numMatches = 0;
+        $(".headlines").empty();
+
+        for (var i=0; i<numFeeds; i++) {
+            parseRSS(feeds[i], parseResults);
+        }       
+    }
+
+    function parseRSS(url, callback) {
+        var api = '//ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&callback=?&q=';
+        $.ajax({
+            url: document.location.protocol + api + encodeURIComponent(url),
+            dataType: 'json',
+            success: function(data) {
+               callback(data.responseData.feed);
+            }
+        });
+    }
+
+    function parseResults(data) {
+        var headlines = [];
+        var elem;
+        var headline;
+
+        // uncommend the following line to inspect the data in your console
+        //console.log(data);
+
+        // iterate through each article and get the title. If the searh term
+        // matches, display the headline and set the alert
+        for (var article in data.entries) {
+            headline = data.entries[article].title;
+            if (checkForMatch(headline)) {
+                //updateAlert(++numMatches);
+                numMatches++;
+                elem = $("<h1>" + headline + "</h1>");
+                headlines.push(elem);
+            }
+            // uncomment the following line to log all headlines (regardless of match)
+            // console.log(headline);
+        }
+        updateAlert(numMatches);
+
+        $(".headlines").append(headlines);
+    }
+
+    function checkForMatch(headline) {
+        return headline.match(matchPattern);
+    }
+
+    /*
+     * Listen for the form submit event.
+     */
+    $("form").on("submit", function (event) {
+        var searchTerm = $("input:first-child").val();
+
+        // prevent page refresh since we want to handle this form with JavaScript
+        event.preventDefault();
+
+        // make sure a search term is defined and that it is not an empty string
+        if (searchTerm && searchTerm !== "") {
+            // update the matching pattern
+            matchPattern = new RegExp(searchTerm);
+
+            // check feeds against new pattern
+            checkFeeds();
+        }
+    });      
+
+});
+
+</script>
+
+</head>
+<body>
+
+    <header>
+        <h2>RSS Feed Example</h2>
+    </header>
+
+    <section>
+        <form action>
+            <input id="searchField" type="text" placeholder="enter term to monitor">
+        </form>
+    </section>
+
+    <section>
+        <div class="headlines"></div>
+    </section>
+  
+</body>
+</html>​
