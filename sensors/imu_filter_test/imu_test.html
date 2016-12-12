@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8 />
+<style type="text/css">
+.text {
+	font-family: "Arial";
+	font-size: 22px;
+	color: #00AEEF;
+	padding:20px;
+}
+</style>
+
+<title>IMU Test</title>
+
+<script src="../../dist/Breakout.js"></script>
+<script src="js/IMUFilter.js"></script>
+<script src="../libs/jquery-1.7.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	// dependencies
+	// declare these variables so you don't have
+	// to type the full namespace	
+	var IOBoard = BO.IOBoard;
+	var IOBoardEvent = BO.IOBoardEvent;
+	var GyroITG3200 = BO.io.GyroITG3200;
+	var GyroEvent = BO.io.GyroEvent;
+	var AccelerometerADXL345 = BO.io.AccelerometerADXL345;
+	var AccelerometerEvent = BO.io.AccelerometerEvent;
+	var Timer = JSUTILS.Timer;
+	var TimerEvent = JSUTILS.TimerEvent;
+	var IMUFilter = BO.IMUFilter;
+
+	// note you must use a 3.3v or lower IOBoard (such as the Arduino Fio)
+	// with the ITG3200
+	var fio = new IOBoard("localhost", 8887);
+	var gyro;
+	var accelerometer;
+	var imuFilter;
+	var imuFilterTick;
+	var gotGyro = false;
+	var gotAccel = false;
+	var UPDATE_INTERVAL = 100;
+	var FILTER_RATE = 0.1;
+	//var GRAVITY = 1.0;
+	var GRAVITY = 9.812865328;	// /m/s/s
+	
+	fio.addEventListener(IOBoardEvent.READY, onReady);
+
+	function onReady(event) {
+
+		fio.removeEventListener(IOBoardEvent.READY, onReady);	
+		
+		initGyro();
+		initAccelerometer();
+
+		imuFilter = new IMUFilter(FILTER_RATE, 0.3);
+
+		imuFilterTick = new Timer(UPDATE_INTERVAL, 0);
+		imuFilterTick.addEventListener(TimerEvent.TIMER, onImuFilterTick);
+		imuFilterTick.start();
+	}
+
+	function initGyro() {
+		// params: IOBoard, autoStart, i2cAddress
+		//gyro = new GyroITG3200(fio, false, GyroITG3200.DEVICE_ID);
+		gyro = new GyroITG3200(fio, false);
+	    gyro.setOffsets(-3, 4.0, -4.1);
+	    gyro.addEventListener(GyroEvent.UPDATE, onGyroUpdate);		
+	}
+
+	function initAccelerometer() {
+		// params: IOBoard, dynamicRange, i2cAddress
+		// var accelerometer = new AccelerometerADXL345(
+		// 						fio, 
+		// 						AccelerometerADXL345.RANGE_2G,
+		// 						AccelerometerADXL345.DEVICE_ID);
+		accelerometer = new AccelerometerADXL345(fio);						
+	    accelerometer.setAxisOffset(-2, -2, 6);
+	    accelerometer.addEventListener(AccelerometerEvent.UPDATE, onAccelerationUpdate);
+	}
+
+	// if autoStart is false, you must listen for GYRO_READY
+	// event and call startReading() when the event is fired
+	function onGyroReady(event) {
+		gyro.removeEventListener(GyroEvent.UPDATE, onGyroUpdate);
+
+		gyro.startReading();
+	}
+
+	function onAccelerationUpdate(event) {
+		gotAccel = true;
+
+		if (gotGyro === true) {
+			process();
+		}
+
+	}
+	
+	function onGyroUpdate(event) {
+		gotGyro = true;
+
+		if (gotAccel === true) {
+			process();
+		}
+	}
+
+	function process() {
+		var pitch;
+		var roll;
+		var yaw;
+		
+		gotGyro = false;
+		gotAccel = false;
+
+		imuFilter.updateFilter(toRadians(gyro.x), toRadians(gyro.y), toRadians(gyro.z),
+								accelerometer.x * GRAVITY, 
+								accelerometer.y * GRAVITY, 
+								accelerometer.z * GRAVITY);
+
+		imuFilter.computeEuler();
+
+		pitch = toDegrees(imuFilter.pitch);
+		roll = toDegrees(imuFilter.roll);
+		yaw = toDegrees(imuFilter.yaw);
+
+		$('#pitch').html("pitch = " + pitch.toFixed(3));
+		$('#roll').html("roll = " + roll.toFixed(3));
+		$('#yaw').html("yaw = " + yaw.toFixed(3));
+
+		$('#xVal').html("x = " + gyro.x.toFixed(3));
+		$('#yVal').html("y = " + gyro.y.toFixed(3));
+		$('#zVal').html("z = " + gyro.z.toFixed(3));		
+	}
+
+	function onImuFilterTick(event) {
+
+		if (accelerometer === undefined || gyro === undefined) return;
+
+		accelerometer.update();
+		gyro.update();
+	}
+
+	function toRadians(decimalVal) {
+		return decimalVal * Math.PI/180;
+	}
+
+	function toDegrees(radianVal) {
+		return radianVal * (180/Math.PI);
+	}
+			
+});
+</script>
+
+</head>
+<body>
+
+	<h2>IMU</h2>
+	<div id="pitch" class="text">pitch =</div>
+	<div id="roll" class="text">roll =</div>
+	<div id="yaw" class="text">yaw =</div>
+
+	<h2>Gyro</h2>
+	<div id="xVal" class="text">x =</div>
+	<div id="yVal" class="text">y =</div>
+	<div id="zVal" class="text">z =</div>
+
+</body>
+</html>​
